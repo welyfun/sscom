@@ -21,7 +21,7 @@ jobs:
         run: |
           ./appimagetool-x86_64.AppImage sscom.AppDir
 
-      - name: Delete existing Continuous Build release
+      - name: Delete existing Continuous Build release and tag
         uses: actions/github-script@v7
         with:
           script: |
@@ -37,11 +37,34 @@ jobs:
               
               if (existingRelease) {
                 console.log(`Deleting existing release: ${existingRelease.name} (ID: ${existingRelease.id})`);
+                
+                // 先记录tag_name，因为删除release后我们就无法从该release对象获取了
+                const tagName = existingRelease.tag_name;
+                
+                // 删除release
                 await github.rest.repos.deleteRelease({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   release_id: existingRelease.id
                 });
+
+                // 尝试删除关联的tag
+                try {
+                  await github.rest.git.deleteRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `tags/${tagName}`
+                  });
+                  console.log(`Successfully deleted tag: ${tagName}`);
+                } catch (tagError) {
+                  // 如果tag不存在或其他错误，忽略或记录警告
+                  if (tagError.status === 404) {
+                    console.log(`Tag ${tagName} not found, skipping deletion`);
+                  } else {
+                    console.warn(`Failed to delete tag ${tagName}: ${tagError.message}`);
+                  }
+                }
+                
                 return "deleted";
               }
               return "not_found";
