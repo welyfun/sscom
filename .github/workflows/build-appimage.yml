@@ -21,6 +21,38 @@ jobs:
         run: |
           ./appimagetool-x86_64.AppImage sscom.AppDir
 
+      - name: Delete existing Continuous Build release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              // 获取所有release
+              const releases = await github.rest.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+              
+              // 查找名为"Continuous Build"的release
+              const existingRelease = releases.data.find(release => release.name === "Continuous Build");
+              
+              if (existingRelease) {
+                console.log(`Deleting existing release: ${existingRelease.name} (ID: ${existingRelease.id})`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: existingRelease.id
+                });
+                return "deleted";
+              }
+              return "not_found";
+            } catch (error) {
+              core.error(`Failed to delete release: ${error}`);
+              core.setFailed(error.message);
+              return "error";
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
