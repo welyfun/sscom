@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=sscom
+Comment=sscom for linux
+Exec=sscom
+Icon=sscom
+Categories=Utility;
