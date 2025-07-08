@@ -1,8 +1,9 @@
 name: Build and Release AppImage
 
 on:
-  release:
-    types: [created]
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build-appimage:
@@ -19,16 +20,16 @@ jobs:
       - name: Build AppImage
         run: |
           ./appimagetool-x86_64.AppImage sscom.AppDir
-          # 生成文件名格式：应用名-版本号-x86_64.AppImage
-          RELEASE_NAME=$(echo ${{ github.event.release.tag_name }} | sed 's/^v//')
-          mv sscom-x86_64.AppImage sscom-$RELEASE_NAME-x86_64.AppImage
 
-      - name: Upload to Release
-        uses: actions/upload-release-asset@v1
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: sscom-x86_64.AppImage
+          tag_name: continuous
+          name: Continuous Build
+          body: Automatic build from main branch
+          prerelease: false
+          draft: false
+          replace_assets: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./sscom-$RELEASE_NAME-x86_64.AppImage
-          asset_name: sscom-$RELEASE_NAME-x86_64.AppImage
-          asset_content_type: application/octet-stream
